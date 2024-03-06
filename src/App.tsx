@@ -22,7 +22,7 @@ const App = () => {
       }
     };
 
-    const refreshChain = (chainId: any) => {
+    const refreshChain = (chainId: string) => {
       setWallet((wallet) => ({ ...wallet, chainId }));
     };
 
