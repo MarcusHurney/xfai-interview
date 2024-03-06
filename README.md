@@ -2,7 +2,7 @@
 
 ## About The Project
 
-Integrates metammask provider into react app. Detects presence of provider and allows user to connect Ethereum wallet via meta mask.
+Integrates MetaMask into react app. Detects presence of Ethereum provider and allows user to connect wallet via MetaMask.
 Maintained by Marcus Hurney
 
 ### Installation
