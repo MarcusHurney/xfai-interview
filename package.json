@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bancor/carbon-sdk": "^0.0.95-DEV",
+    "@ethersproject/providers": "^5.7.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

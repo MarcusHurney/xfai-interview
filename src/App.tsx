@@ -1,114 +1,75 @@
 import "./App.css";
-import { useState, useEffect } from "react";
-import { formatBalance, formatChainAsNum } from "./utils";
-import detectEthereumProvider from "@metamask/detect-provider";
+import { useEffect } from "react";
+import {
+  PayableOverrides,
+  TradeActionBNStr,
+  TokenPair,
+  MatchActionBNStr,
+  StrategyUpdate,
+  EncodedStrategyBNStr,
+} from "@bancor/carbon-sdk";
+import { Toolkit } from "@bancor/carbon-sdk/strategy-management";
+import { ChainCache, initSyncedCache } from "@bancor/carbon-sdk/chain-cache";
+import {
+  ContractsApi,
+  ContractsConfig,
+} from "@bancor/carbon-sdk/contracts-api";
+import { StaticJsonRpcProvider } from "@ethersproject/providers";
 
 const App = () => {
-  const [hasProvider, setHasProvider] = useState<boolean | null>(null);
-  const initialState = { accounts: [], balance: "", chainId: "" };
-  const [wallet, setWallet] = useState(initialState);
+  let api: ContractsApi;
+  let sdkCache: ChainCache;
+  let carbonSDK: Toolkit;
+  let isInitialized = false;
+  let isInitializing = false;
 
-  const [isConnecting, setIsConnecting] = useState(false); /* New */
-  const [error, setError] = useState(false); /* New */
-  const [errorMessage, setErrorMessage] = useState(""); /* New */
+  function onPairDataChanged(affectedPairs: any) {
+    console.log(`onPairDataChanged => affectedPairs: ${affectedPairs}`);
+  }
 
-  useEffect(() => {
-    const refreshAccounts = (accounts: any) => {
-      if (accounts.length > 0) {
-        updateWallet(accounts);
-      } else {
-        // if length 0, user is disconnected
-        setWallet(initialState);
-      }
-    };
+  function onPairAddedToCache(affectedPairs: any) {
+    console.log(`onPairAddedToCache => affectedPairs: ${affectedPairs}`);
+  }
 
-    const refreshChain = (chainId: string) => {
-      setWallet((wallet) => ({ ...wallet, chainId }));
-    };
-
-    const getProvider = async () => {
-      const provider = await detectEthereumProvider({ silent: true });
-      setHasProvider(Boolean(provider));
-
-      if (provider) {
-        const accounts = await window.ethereum.request({
-          method: "eth_accounts",
-        });
-        refreshAccounts(accounts);
-        window.ethereum.on("accountsChanged", refreshAccounts);
-        window.ethereum.on("chainChanged", refreshChain);
-      }
-    };
-
-    getProvider();
-
-    return () => {
-      window.ethereum?.removeListener("accountsChanged", refreshAccounts);
-      window.ethereum?.removeListener("chainChanged", refreshChain);
-    };
-  }, []);
-
-  const updateWallet = async (accounts: any) => {
-    const balance = formatBalance(
-      await window.ethereum!.request({
-        method: "eth_getBalance",
-        params: [accounts[0], "latest"],
-      })
+  const init = async (
+    rpcUrl: string,
+    config: ContractsConfig,
+    decimalsMap?: Map<string, number>,
+    cachedData?: string
+  ) => {
+    if (isInitialized || isInitializing) return;
+    isInitializing = true;
+    const provider = new StaticJsonRpcProvider(rpcUrl);
+    api = new ContractsApi(provider, config);
+    const { cache, startDataSync } = initSyncedCache(api.reader, cachedData);
+    sdkCache = cache;
+    carbonSDK = new Toolkit(
+      api,
+      sdkCache,
+      decimalsMap
+        ? (address) => decimalsMap.get(address.toLowerCase())
+        : undefined
     );
-    const chainId = await window.ethereum!.request({
-      method: "eth_chainId",
-    });
-    setWallet({ accounts, balance, chainId });
-  };
+    sdkCache.on("onPairDataChanged", (affectedPairs) =>
+      onPairDataChanged(affectedPairs)
+    );
+    sdkCache.on("onPairAddedToCache", (affectedPairs) =>
+      onPairAddedToCache(affectedPairs)
+    );
+    await startDataSync();
+    isInitialized = true;
+    isInitializing = false;
 
-  const handleConnect = async () => {
-    /* Updated */
-    setIsConnecting(true); /* New */
-    await window.ethereum
-      .request({
-        /* Updated */ method: "eth_requestAccounts",
-      })
-      .then((accounts: []) => {
-        /* New */
-        setError(false); /* New */
-        updateWallet(accounts); /* New */
-      }) /* New */
-      .catch((err: any) => {
-        /* New */
-        setError(true); /* New */
-        setErrorMessage(err.message); /* New */
-      }); /* New */
-    setIsConnecting(false); /* New */
+    return carbonSDK;
   };
-
-  const disableConnect = Boolean(wallet) && isConnecting;
+  useEffect(() => {
+    const rpcurl = "http://localhost:8889/";
+    init(rpcurl, {});
+  }, []);
 
   return (
     <div className="App">
       <h1>Xfai Interview</h1>
-      <h2>This is a Metamask integrated dapp</h2>
-      <div>Injected Provider {hasProvider ? "DOES" : "DOES NOT"} Exist</div>
-
-      {window.ethereum?.isMetaMask &&
-        wallet.accounts.length < 1 /* Updated */ && (
-          <button disabled={disableConnect} onClick={handleConnect}>
-            Connect MetaMask
-          </button>
-        )}
-
-      {wallet.accounts.length > 0 && (
-        <>
-          <div>Wallet Accounts: {wallet.accounts[0]}</div>
-          <div>Wallet Balance: {wallet.balance}</div>
-          <div>Hex ChainId: {wallet.chainId}</div>
-          <div>Numeric ChainId: {formatChainAsNum(wallet.chainId)}</div>
-        </>
-      )}
-      {error /* New code block */ && (
-        <div onClick={() => setError(false)}>
-          <strong>Error:</strong> {errorMessage}
-        </div>
-      )}
     </div>
   );
 };
