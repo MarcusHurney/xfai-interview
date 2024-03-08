@@ -2,7 +2,7 @@
 
 ## About The Project
 
-Integrates MetaMask into react app. Detects presence of Ethereum provider and allows user to connect wallet via MetaMask.
+Integrates Carbon SDK into React app. Requires carbon-simulator running locally.
 Maintained by Marcus Hurney
 
 ### Installation
