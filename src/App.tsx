@@ -39,7 +39,16 @@ const App = () => {
   ) => {
     if (isInitialized || isInitializing) return;
     isInitializing = true;
-    const provider = new StaticJsonRpcProvider(rpcUrl);
+
+    const connection = {
+      url: rpcUrl,
+      headers: {
+        ["Content-Type"]: "application/json; charset=utf-8",
+        ["Access-Control-Allow-Origin"]: "*",
+      },
+    };
+
+    const provider = new StaticJsonRpcProvider(connection);
     api = new ContractsApi(provider, config);
     const { cache, startDataSync } = initSyncedCache(api.reader, cachedData);
     sdkCache = cache;
@@ -64,7 +73,11 @@ const App = () => {
   };
   useEffect(() => {
     const rpcurl = "http://localhost:8889/";
-    init(rpcurl, {});
+    async function initializeSDK() {
+      const sdk = await init(rpcurl, {});
+      console.log(sdk);
+    }
+    initializeSDK();
   }, []);
 
   return (
