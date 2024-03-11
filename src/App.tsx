@@ -45,6 +45,9 @@ const App = () => {
       headers: {
         ["Content-Type"]: "application/json; charset=utf-8",
         ["Access-Control-Allow-Origin"]: "*",
+        ["Access-Control-Allow-Methods"]: "DELETE, POST, GET, OPTIONS",
+        ["Access-Control-Allow-Headers"]:
+          "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With",
       },
     };
 
